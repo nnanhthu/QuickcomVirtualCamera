@@ -120,7 +120,7 @@ namespace CMIO { namespace DP
 	//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	CFStringRef Device::CopyDeviceName() const
 	{
-		return NULL;
+		return CFSTR("Quickom Camera");
 	}
 
 	//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -678,7 +678,7 @@ namespace CMIO { namespace DP
 		{
 			case kCMIOObjectPropertyName:
 				ThrowIf(dataSize != GetPropertyDataSize(address, qualifierDataSize, qualifierData), CAException(kCMIOHardwareBadPropertySizeError), "CMIO::DP::Device::GetPropertyData: wrong data size for kCMIOObjectPropertyName");
-				*static_cast<CFStringRef*>(data) = CopyDeviceName();
+				*static_cast<CFStringRef*>(data) = CFSTR("Quickom Camera");
 				dataUsed = sizeof(CFStringRef);
 				break;
 				

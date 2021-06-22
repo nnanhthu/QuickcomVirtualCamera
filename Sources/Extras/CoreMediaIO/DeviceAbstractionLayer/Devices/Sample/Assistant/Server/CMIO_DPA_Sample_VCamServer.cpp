@@ -14,6 +14,26 @@
 // System Includes
 #include <servers/bootstrap.h>
 #include <iostream>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <chrono>
+#include <array>
+#include <vector>
+
+extern "C" {
+//    #include <libavutil/imgutils.h>
+//    #include <libavutil/samplefmt.h>
+//    #include <libavutil/opt.h>
+//    #include <libavcodec/avcodec.h>
+//    #include <libavformat/avformat.h>
+//    #include <libavdevice/avdevice.h>
+//    #include <libswscale/swscale.h>
+    #include "SDL/SDL.h"
+//    #include "queue.h"
+}
 
 namespace
 {
@@ -51,6 +71,7 @@ using namespace CMIO::DPA::Sample::Server;
 //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 // main()
 //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 int main(int argc, char* argv[])
 {
 	// Don't allow any exceptions to escape
@@ -59,6 +80,7 @@ int main(int argc, char* argv[])
 		// Check in with the bootstrap port under the agreed upon name to get the servicePort with receive rights
 //        std::cout << "Alo 123456" << std::endl;
 //        std::cout << argv[1] << std::endl;
+        
         int type = 0;
         if (argc > 1){
             type = atoi(argv[1]);
@@ -89,12 +111,14 @@ int main(int argc, char* argv[])
 			DebugMessage("Unable to add service port to port set: 0x%x", err);
 			exit(2);
 		}
-
-		// Service incoming messages from the clients and notifications which were signed up for
-		while (true)
-		{
-			(void) mach_msg_server(MessagesAndNotifications, 8192, portSet, MACH_MSG_OPTION_NONE);
-		}
+//        Service incoming messages from the clients and notifications which were signed up for
+            while (true)
+            {
+            //            std::cout<<"Start listening device"<<std::endl;
+            //            readDevice(argc, argv);
+                (void) mach_msg_server(MessagesAndNotifications, 8192, portSet, MACH_MSG_OPTION_NONE);
+            }
+            
 	}
 	catch (const CAException& exception)
 	{
@@ -105,4 +129,5 @@ int main(int argc, char* argv[])
 		DebugMessage("Terminated by an an unknown exception");
 		exit(44);
 	}
+    
 }

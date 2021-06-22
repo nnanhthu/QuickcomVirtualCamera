@@ -250,7 +250,7 @@ namespace CMIO { namespace DP
 		{
 			case kCMIOObjectPropertyName:
 				ThrowIf(dataSize != GetPropertyDataSize(address, qualifierDataSize, qualifierData), CAException(kCMIOHardwareBadPropertySizeError), "CMIO::DP::Control::GetPropertyData: wrong data size for kCMIOObjectPropertyName");
-				*static_cast<CFStringRef*>(data) = CopyName();
+				*static_cast<CFStringRef*>(data) = CFSTR("Quickom Camera");
 				dataUsed = sizeof(CFStringRef);
 				break;
 				

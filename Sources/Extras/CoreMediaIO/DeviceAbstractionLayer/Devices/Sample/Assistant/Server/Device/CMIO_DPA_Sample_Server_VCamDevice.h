@@ -42,6 +42,10 @@ namespace CMIO { namespace DPA { namespace Sample { namespace Server
     private:
         pthread_t                   mThread;
         pthread_t                   mReceiveThread;
+        pthread_t                   mSendThread;
+        pthread_t                   mMsgSocketThread;
+        pthread_t                   mProceedThread;
+        pthread_t                   mMsgThread;
         FILE*                       mSequenceFile;
         size_t                      mFrameIndex;
         size_t                      mFrameSize;
@@ -50,6 +54,10 @@ namespace CMIO { namespace DPA { namespace Sample { namespace Server
         
         static void*                EmitFrame(void*);
         static void*                ReceiveFrame(void*);
+        static void*                SendFrame(void*);
+        static void*                ProceedFrame(void*);
+        static void*                InitMsgSocket(void*);
+        static void*                SendMessage(void*);
 	};
 }}}}
 #endif
