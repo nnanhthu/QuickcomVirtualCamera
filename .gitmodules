@@ -1,6 +1,6 @@
 [submodule "tools"]
 	path = tools
 	url = https://github.com/trojanfoe/xcodedevtools
-[submodule "BuildSystem/XcodeProjects/tools"]
-	path = BuildSystem/XcodeProjects/tools
+[submodule "BuildSystem/XcodeProjects/tool."]
+	path = BuildSystem/XcodeProjects/tool.
 	url = https://github.com/trojanfoe/xcodedevtools
