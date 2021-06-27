@@ -87,11 +87,11 @@ VCamDevice::VCamDevice(int type) :
 
         mFramebuffer = new uint8_t[mFrameSize];
 
-//        pthread_create(&mMsgSocketThread, NULL, &VCamDevice::InitMsgSocket, this);
+        pthread_create(&mMsgSocketThread, NULL, &VCamDevice::InitMsgSocket, this);
         pthread_create(&mThread, NULL, &VCamDevice::EmitFrame, this);
         pthread_create(&mReceiveThread, NULL, &VCamDevice::ReceiveFrame, this);
-        pthread_create(&mSendThread, NULL, &VCamDevice::SendFrame, this);
-//        pthread_create(&mMsgThread, NULL, &VCamDevice::SendMessage, this);
+//        pthread_create(&mSendThread, NULL, &VCamDevice::SendFrame, this);
+        pthread_create(&mMsgThread, NULL, &VCamDevice::SendMessage, this);
 //        pthread_create(&mProceedThread, NULL, &VCamDevice::ProceedFrame, this);
         
     }
@@ -311,6 +311,7 @@ VCamDevice::VCamDevice(int type) :
 //                        }
 //    }
 
+
 //Send Frame from Go
 void* VCamDevice::SendFrame(void* device) {
     usleep(1000 * 1000 / 60);
@@ -319,35 +320,35 @@ void* VCamDevice::SendFrame(void* device) {
     GoInt width = 1280;
     GoInt height = 720;
     GoInt deviceId = 0;
-    switch (vcamDevice->mFrameSize){
-        case 720*480*2:
-            width = 720;
-            height = 480;
-            break;
-        case 1280*720*2:
-            width = 1280;
-            height = 720;
-            break;
-        case 1920*1080*2:
-            width = 1920;
-            height = 1080;
-            break;
-        default:
-            break;
-    }
+        switch (vcamDevice->mFrameSize){
+            case 720*480*2:
+                width = 720;
+                height = 480;
+                break;
+            case 1280*720*2:
+                width = 1280;
+                height = 720;
+                break;
+            case 1920*1080*2:
+                width = 1920;
+                height = 1080;
+                break;
+            default:
+                break;
+        }
 
-    std::string s = "";
-    char *cstr = new char[s.length()+1];
-    std::strcpy (cstr, s.c_str());
-    std::string sk = "/tmp/vcam-socket";
-    char *cstr1 = new char[sk.length()+1];
-    std::strcpy (cstr1, sk.c_str());
-    std::cout<<"Width - height: "<<width<<" - "<<height<<std::endl;
-    ReadCamCV(deviceId, width, height, cstr, cstr1);
-//    ReadCam(width, height, cstr, cstr1);
-//    queue_t *q = queue_create();
-//    ReadCam(width, height, cstr, q);
-//    queue_get(q, (void **)&vcamDevice->mFramebuffer);
+        std::string s = "";
+        char *cstr = new char[s.length()+1];
+        std::strcpy (cstr, s.c_str());
+        std::string sk = "/tmp/vcam-socket";
+        char *cstr1 = new char[sk.length()+1];
+        std::strcpy (cstr1, sk.c_str());
+        std::cout<<"Width - height: "<<width<<" - "<<height<<std::endl;
+        ReadCamCV(deviceId, width, height, cstr, cstr1);
+    //    ReadCam(width, height, cstr, cstr1);
+    //    queue_t *q = queue_create();
+    //    ReadCam(width, height, cstr, q);
+    //    queue_get(q, (void **)&vcamDevice->mFramebuffer);
 }
 
 //Send Frame from OpenCV
@@ -376,13 +377,28 @@ void* VCamDevice::SendMessage(void * device){
         }
         std::cout<<"Connect to socket. Start sending msg."<<std::endl;
     
-        std::string sk = "test message";
-        char *cstr = new char[sk.length()+1];
-        std::strcpy (cstr, sk.c_str());
         while(1){
+            std::string sk = "{\"deviceId\":0}";
+            char *cstr = new char[sk.length()+1];
+            std::strcpy (cstr, sk.c_str());
+            
+            std::cout<<"Write device to socket:"<<sk<<std::endl;
             if (write(sock, cstr, sk.length()+1) == -1) {
                 throw std::runtime_error("write");
             }
+            std::cout << "Sleeping for 30 seconds ..." << std::endl;
+            sleep(30);
+            
+            std::string sk1 = "{\"deviceId\":1}";
+            char *cstr1 = new char[sk1.length()+1];
+            std::strcpy (cstr1, sk1.c_str());
+            
+            std::cout<<"Write device to socket:"<<sk1<<std::endl;
+            if (write(sock, cstr1, sk1.length()+1) == -1) {
+                throw std::runtime_error("write");
+            }
+            std::cout << "Sleeping for 30 seconds ..." << std::endl;
+            sleep(30);
         }
     } catch (const std::exception& e) {
         std::cerr << e.what();
@@ -393,6 +409,7 @@ void* VCamDevice::SendMessage(void * device){
 
 void* VCamDevice::InitMsgSocket(void * device){
     std::cout << "Init message socket" << std::endl;
+    VCamDevice* vcamDevice = (VCamDevice*)device;
     // サーバーソケット作成
     int sock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sock == -1) {
@@ -400,7 +417,7 @@ void* VCamDevice::InitMsgSocket(void * device){
         return NULL;
     }
     // Set socket buffer size
-    int bufferSize = 12;// 1024 * 1024;
+    int bufferSize = 14;// 1024 * 1024;
     socklen_t bufferSizeLen = sizeof(bufferSize);
     if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<char *>(&bufferSize), bufferSizeLen) == -1) {
         perror("setsockopt error");
@@ -426,7 +443,6 @@ void* VCamDevice::InitMsgSocket(void * device){
         perror("listen");
         goto bail;
     }
-    
     while (1) {
         // クライアントの接続を待つ
         int fd = accept(sock, NULL, NULL);
@@ -462,6 +478,41 @@ void* VCamDevice::InitMsgSocket(void * device){
                 std::string str = (char*)framebuffer;
                 if (str.size() == bufferSize){
                     std::cout << "Receive message:" << str << std::endl;
+                    //Analyze received message
+                    size_t index1 = str.find(":");
+                    std::string str1 = str.substr(index1 + 1);
+                    size_t length = str1.size() - 1;
+                    std::string str2 = str1.substr(0, length);
+                    int deId = stoi(str2);
+                    GoInt width = 1280;
+                    GoInt height = 720;
+                    GoInt deviceId = deId;
+                        switch (vcamDevice->mFrameSize){
+                            case 720*480*2:
+                                width = 720;
+                                height = 480;
+                                break;
+                            case 1280*720*2:
+                                width = 1280;
+                                height = 720;
+                                break;
+                            case 1920*1080*2:
+                                width = 1920;
+                                height = 1080;
+                                break;
+                            default:
+                                break;
+                        }
+
+                        std::string s = "";
+                        char *cstr = new char[s.length()+1];
+                        std::strcpy (cstr, s.c_str());
+                        std::string sk = "/tmp/vcam-socket";
+                        char *cstr1 = new char[sk.length()+1];
+                        std::strcpy (cstr1, sk.c_str());
+                    std::cout << "Start reading cam from device Id:" << deId << std::endl;
+                        std::cout<<"Width - height: "<<width<<" - "<<height<<std::endl;
+                        ReadCamCV(deviceId, width, height, cstr, cstr1);
                 }
             }
         }
