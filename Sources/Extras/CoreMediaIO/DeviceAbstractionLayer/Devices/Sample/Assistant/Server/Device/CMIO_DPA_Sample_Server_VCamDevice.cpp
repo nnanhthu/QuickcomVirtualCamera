@@ -313,13 +313,19 @@ VCamDevice::VCamDevice(int type) :
 
 
 //Send Frame from Go
-void* VCamDevice::SendFrame(void* device) {
+void* VCamDevice::SendFrame(void* threadArgs) {
     usleep(1000 * 1000 / 60);
-    VCamDevice* vcamDevice = (VCamDevice*)device;
+    pthread_detach(pthread_self());
+    ThreadArgs* thread = (ThreadArgs*)threadArgs;
+    VCamDevice* vcamDevice = (VCamDevice*)(thread -> vCamDevice);
+    int deId = thread -> deviceId;
+    int times = thread -> times;
+    free(threadArgs);
     std::cout<<"Starting read cam framesize: "<<vcamDevice->mFrameSize<<std::endl;
+    std::cout<<"And from device: "<<deId<<std::endl;
     GoInt width = 1280;
     GoInt height = 720;
-    GoInt deviceId = 0;
+    GoInt deviceId = deId;
         switch (vcamDevice->mFrameSize){
             case 720*480*2:
                 width = 720;
@@ -344,7 +350,14 @@ void* VCamDevice::SendFrame(void* device) {
         char *cstr1 = new char[sk.length()+1];
         std::strcpy (cstr1, sk.c_str());
         std::cout<<"Width - height: "<<width<<" - "<<height<<std::endl;
+//    Close();
+    if (times == 0){
+        //First time to read camera
         ReadCamCV(deviceId, width, height, cstr, cstr1);
+    }else{
+        //From the second times
+        InitWebCam(width, height, deviceId);
+    }
     //    ReadCam(width, height, cstr, cstr1);
     //    queue_t *q = queue_create();
     //    ReadCam(width, height, cstr, q);
@@ -377,8 +390,11 @@ void* VCamDevice::SendMessage(void * device){
         }
         std::cout<<"Connect to socket. Start sending msg."<<std::endl;
     
+        int i = 0;
         while(1){
-            std::string sk = "{\"deviceId\":0}";
+            std::string sk = "{\"deviceId\":";
+            sk += std::to_string(i);
+            sk += "}";
             char *cstr = new char[sk.length()+1];
             std::strcpy (cstr, sk.c_str());
             
@@ -389,16 +405,21 @@ void* VCamDevice::SendMessage(void * device){
             std::cout << "Sleeping for 30 seconds ..." << std::endl;
             sleep(30);
             
-            std::string sk1 = "{\"deviceId\":1}";
-            char *cstr1 = new char[sk1.length()+1];
-            std::strcpy (cstr1, sk1.c_str());
-            
-            std::cout<<"Write device to socket:"<<sk1<<std::endl;
-            if (write(sock, cstr1, sk1.length()+1) == -1) {
-                throw std::runtime_error("write");
+            i++;
+            if (i == 2){
+                i = 0;
             }
-            std::cout << "Sleeping for 30 seconds ..." << std::endl;
-            sleep(30);
+            
+//            std::string sk1 = "{\"deviceId\":1}";
+//            char *cstr1 = new char[sk1.length()+1];
+//            std::strcpy (cstr1, sk1.c_str());
+//
+//            std::cout<<"Write device to socket:"<<sk1<<std::endl;
+//            if (write(sock, cstr1, sk1.length()+1) == -1) {
+//                throw std::runtime_error("write");
+//            }
+//            std::cout << "Sleeping for 30 seconds ..." << std::endl;
+//            sleep(30);
         }
     } catch (const std::exception& e) {
         std::cerr << e.what();
@@ -409,6 +430,7 @@ void* VCamDevice::SendMessage(void * device){
 
 void* VCamDevice::InitMsgSocket(void * device){
     std::cout << "Init message socket" << std::endl;
+    int i = 0;
     VCamDevice* vcamDevice = (VCamDevice*)device;
     // サーバーソケット作成
     int sock = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -443,6 +465,7 @@ void* VCamDevice::InitMsgSocket(void * device){
         perror("listen");
         goto bail;
     }
+    
     while (1) {
         // クライアントの接続を待つ
         int fd = accept(sock, NULL, NULL);
@@ -457,7 +480,7 @@ void* VCamDevice::InitMsgSocket(void * device){
             // 受信
             uint8_t* framebuffer = new uint8_t[bufferSize];
             int recv_size = read(fd, framebuffer, bufferSize);
-//            std::cout << "Received size:" << recv_size << std::endl;
+            std::cout << "Received size:" << recv_size << std::endl;
             if (recv_size == -1)
             {
                 perror("read");
@@ -470,9 +493,9 @@ void* VCamDevice::InitMsgSocket(void * device){
                 break;
             }
             totalReceived += recv_size;
-//            std::cout << "Total received size:" << totalReceived << std::endl;
+            std::cout << "Total received size:" << totalReceived << std::endl;
 
-            if (totalReceived == bufferSize) {
+            if (recv_size == bufferSize) {
                 // frame complete
                 totalReceived = 0;
                 std::string str = (char*)framebuffer;
@@ -484,6 +507,7 @@ void* VCamDevice::InitMsgSocket(void * device){
                     size_t length = str1.size() - 1;
                     std::string str2 = str1.substr(0, length);
                     int deId = stoi(str2);
+                    std::cout << "Call send frame from device Id:" << deId << std::endl;
                     GoInt width = 1280;
                     GoInt height = 720;
                     GoInt deviceId = deId;
@@ -510,11 +534,42 @@ void* VCamDevice::InitMsgSocket(void * device){
                         std::string sk = "/tmp/vcam-socket";
                         char *cstr1 = new char[sk.length()+1];
                         std::strcpy (cstr1, sk.c_str());
-                    std::cout << "Start reading cam from device Id:" << deId << std::endl;
+
                         std::cout<<"Width - height: "<<width<<" - "<<height<<std::endl;
+                    
+//                    pthread_t threadB = pthread_self();
+//                    if (i > 0){
+//                        std::cout<<"Exit current thread"<<threadB<<std::endl;
+//                        pthread_cancel(threadB);
+//                    }
+//                    pthread_t threadID;
+//                    std::cout<<"Start thread"<<threadID<<std::endl;
+//                    struct ThreadArgs *threadArgs;
+//                    threadArgs = (struct ThreadArgs *) malloc(sizeof(struct ThreadArgs));
+//                    if (threadArgs == NULL){
+//                        goto bail;
+//                    }
+//                    threadArgs -> deviceId = deId;
+//                    threadArgs -> vCamDevice = vcamDevice;
+//                    threadArgs -> times = i;
+//                    int pt = pthread_create(&threadID, NULL, &VCamDevice::SendFrame, (void *) threadArgs);
+//                    if (pt != 0){
+//                        goto bail;
+//                    }
+                    
+                    Pause();
+                    sleep(2);
+                    if (i == 0){
+                        //First time to read camera
                         ReadCamCV(deviceId, width, height, cstr, cstr1);
+                    }else{
+                        //From the second times
+                        InitWebCam(width, height, deviceId);
+                    }
+                    UnPause();
                 }
             }
+            i++;
         }
 
         // ソケットのクローズ

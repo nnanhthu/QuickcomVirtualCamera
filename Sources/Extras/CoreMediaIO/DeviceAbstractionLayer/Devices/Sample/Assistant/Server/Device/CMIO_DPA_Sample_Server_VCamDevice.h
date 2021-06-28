@@ -17,6 +17,11 @@
 namespace CMIO { namespace DPA { namespace Sample { namespace Server
 {
     class VCamInputStream;
+    struct ThreadArgs {
+        void* vCamDevice;
+        int deviceId;
+        int times;
+    };
     
     class VCamDevice: public Device
 	{
