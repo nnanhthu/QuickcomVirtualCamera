@@ -27,4 +27,4 @@ dependencies: \
   /Users/thu/QuickcomVirtualCamera/Sources/Extras/CoreMediaIO/PublicUtility/IOStreamAssistant/CMIO_IOSA_Assistance.h \
   /Users/thu/QuickcomVirtualCamera/Sources/Extras/CoreMediaIO/DeviceAbstractionLayer/Devices/Sample/Assistant/Server/Device/CMIO_DPA_Sample_Server_VCamInputStream.h \
   /Users/thu/QuickcomVirtualCamera/Sources/Extras/CoreAudio/PublicUtility/CAHostTimeBase.h \
-  /Users/thu/go/src/yuv-cam/lib/gocam.h
+  /Users/thu/QuickcomVirtualCamera/BuildSystem/XcodeProjects/libs/gocam.h

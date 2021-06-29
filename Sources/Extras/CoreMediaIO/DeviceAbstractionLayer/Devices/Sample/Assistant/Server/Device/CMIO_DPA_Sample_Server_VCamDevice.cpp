@@ -409,17 +409,6 @@ void* VCamDevice::SendMessage(void * device){
             if (i == 2){
                 i = 0;
             }
-            
-//            std::string sk1 = "{\"deviceId\":1}";
-//            char *cstr1 = new char[sk1.length()+1];
-//            std::strcpy (cstr1, sk1.c_str());
-//
-//            std::cout<<"Write device to socket:"<<sk1<<std::endl;
-//            if (write(sock, cstr1, sk1.length()+1) == -1) {
-//                throw std::runtime_error("write");
-//            }
-//            std::cout << "Sleeping for 30 seconds ..." << std::endl;
-//            sleep(30);
         }
     } catch (const std::exception& e) {
         std::cerr << e.what();
